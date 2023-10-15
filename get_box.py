@@ -3,14 +3,15 @@ from PIL import Image
 import numpy as np
 
 model = torch.hub.load('ultralytics/yolov5', 'custom',
-                       path='yolov5\\runs\\drone\\best.pt'
+                       path='yolov5\\runs\\train\\exp2\\weights\\best.pt',
+                       # force_reload=True
                        )
 
-image = Image.open('C:\\Users\\14152\\Desktop\\drone\\dataset_2\\images\\138.jpg')
+image = Image.open('C:\\Users\\14152\\Desktop\\nuclear-segment\\lizard_yolo\\dataset\\eval\\glas_8.png')
 if image.mode == 'RGBA':
     image = image.convert('RGB')
 
-predictions = model(image, size=640)
+predictions = model(image, size=1080)
 
 boxes = predictions.xyxy[0].cpu().numpy()
 scores = boxes[:, 4]
@@ -34,7 +35,7 @@ for box, score, label in zip(boxes, scores, labels):
     ax.add_patch(rect)
     
     label_text = f'{score:.2f}'
-    ax.text(x1, y1, label_text, bbox=dict(facecolor='white', alpha=0.5))
+    #ax.text(x1, y1, label_text, bbox=dict(facecolor='white', alpha=0.5))
     
 plt.axis('off')
 plt.show()

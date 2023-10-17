@@ -41,8 +41,9 @@ def get_subimages(
     inst_map = label['inst_map']
     binary_map = inst_map != 0
     bboxs = label['bbox']
+    num_true = min(num_true, len(bboxs))
     Height, Width = inst_map.shape
-    visualize_bboxes(image_file_path,bboxs)
+    # visualize_bboxes(image_file_path,bboxs)
     """步骤1：获取正例"""
     index = np.linspace(0,len(bboxs)-1,len(bboxs), dtype=np.int32)
     np.random.shuffle(index)
@@ -51,10 +52,10 @@ def get_subimages(
         box_width = bbox[3] - bbox[2]
         box_height = bbox[1] - bbox[0]
         noisy_bbox = [
-            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand) * box_height),
-            bbox[1] + int(np.random.uniform(-pos_rand,pos_rand) * box_height),
-            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand) * box_width),
-            bbox[3] + int(np.random.uniform(-pos_rand,pos_rand) * box_width), 
+            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_height * 1.5),
+            bbox[1] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_height * 1.5),
+            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_width * 1.5),
+            bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width * 1.5), 
         ]
         subimage = image.crop((noisy_bbox[2],noisy_bbox[0],noisy_bbox[3],noisy_bbox[1]))
         subimage_list.append(subimage)
@@ -66,22 +67,22 @@ def get_subimages(
     mean_height = np.mean([bbox[1] - bbox[0] for bbox in bboxs])
     mean_width = np.mean([bbox[3] - bbox[2] for bbox in bboxs])
     while len(subimage_list) < num_false + num_true:
-        box_height = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_height
-        box_width = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_width
+        box_height = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_height * 1.5
+        box_width = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_width * 1.5
         y0 = np.random.uniform(0, Height - box_height -1)
         x0 = np.random.uniform(0, Width - box_width -1)
         fake_bbox = [ y0, y0 + box_height, x0, x0 + box_width]
         proportion = get_proportion(fake_bbox, binary_map)
-        if proportion < true_thresh:
+        if proportion < true_thresh:   
             subimage = image.crop((fake_bbox[2],fake_bbox[0],fake_bbox[3],fake_bbox[1]))
             subimage_list.append(subimage)
             proportion_list.append(proportion)
             bbox_list.append(fake_bbox)
 
-    return subimage_list, proportion_list, bbox_list
+    return subimage_list, proportion_list
 
-# 调用get_subimages函数并获取返回值
-subimage_list, proportion_list, bbox_list = get_subimages("dataset\Lizard_Labels\Labels\consep_1.mat", "dataset\Lizard_Images\consep_1.png",num_true=num_true)
+# # 调用get_subimages函数并获取返回值
+# subimage_list, proportion_list, bbox_list = get_subimages("dataset\Lizard_Labels\Labels\consep_1.mat", "dataset\Lizard_Images\consep_1.png",num_true=num_true)
 
-# 可视化
-visualize_bboxes("dataset\Lizard_Images\consep_1.png", bbox_list)
+# # 可视化
+# visualize_bboxes("dataset\Lizard_Images\consep_1.png", bbox_list)

@@ -40,6 +40,8 @@ class SimpleNet(nn.Module):
                 init.constant_(module.bias, 0)
 
     def forward(self, x):
+        if(len(x.shape) == 3):
+            x = torch.unsqueeze(x,0)
         x = self.conv(x)
         x = torch.flatten(x, 1)
         x = self.linear(x)

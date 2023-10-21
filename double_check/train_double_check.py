@@ -2,6 +2,9 @@ import os
 from datetime import datetime
 from matplotlib import pyplot as plt
 import numpy as np
+
+from prefetch_dataloader import NuclearSegmentDataset, PreFetchDataLoader
+np.seterr(divide='ignore',invalid='ignore')
 import torch
 import torch.nn as nn
 from state_clasifier import SimpleNet
@@ -12,42 +15,12 @@ from prefetch_generator import BackgroundGenerator
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 32
-EPOCH = 10
+EPOCH = 25
 LR = 0.01
 SGD_MOMENTUM = 0.9
+TYPE = '.'
 
-class NuclearSegmentDataset(Dataset):
-
-    def __init__(self, image_path, label_path, num_true=BATCH_SIZE // 2, num_false=BATCH_SIZE // 2) -> None:
-        self.label_path = label_path
-        self.image_path = image_path
-        self.img_list = [f for f in os.listdir(image_path) if f.endswith('.jpg') or f.endswith('.png')]
-        self.label_list = [f for f in os.listdir(label_path) if f.endswith('.mat')]
-        self.num_true = num_true
-        self.num_false = num_false
-        self.data = []
-
-        # Load data in __init__
-        for idx_img in range(len(self.img_list)):
-            subimg_list, proportion_list = get_subimages(
-                os.path.join(self.label_path, self.label_list[idx_img]),
-                os.path.join(self.image_path, self.img_list[idx_img]),
-                self.num_true, self.num_false
-            )
-            subimg_list_T = [
-                torch.tensor(np.array(subimg.resize((32, 32))),dtype=torch.float, device=device).transpose(0,2)
-                for subimg in subimg_list]
-            proportion_list_T = [
-                torch.tensor(proportion, dtype=torch.float32, device=device)
-                for proportion in proportion_list]
-            self.data += zip(subimg_list_T, proportion_list_T)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx]
-
+PRELOAD = 10
 
 class DataLoaderPrefetch(DataLoader):
 
@@ -55,17 +28,12 @@ class DataLoaderPrefetch(DataLoader):
         return BackgroundGenerator(super().__iter__()) 
     
 fig, axes = plt.subplots(4, 5, figsize=(15, 12))
-def eval(model, eval_loader):
+def eval(model, eval_loader, show_result = False):
     model.eval()
     total_loss = 0
     total_samples = 0
-    criterion = torch.nn.MSELoss()
-    
-    
+    criterion = torch.nn.MSELoss() 
     idx = 0
-    
-    plt.ion()  # 开启交互模式
-
     with torch.no_grad():
         for inputs, targets in eval_loader:
             targets = targets.view(-1, 1)
@@ -73,19 +41,21 @@ def eval(model, eval_loader):
             loss = criterion(outputs, targets)
             total_loss += loss.item() * inputs.size(0)
             total_samples += inputs.size(0)
-            
-        for i in range(20):
-            rand_img = np.random.randint(0,len(inputs)-1)
-            ax = axes[idx//5, idx%5]
-            ax.imshow(inputs[rand_img].cpu().transpose(0,2)/255)
-            ax.set_title(f'O: {outputs[rand_img].item():.2f}, T: {targets[rand_img].item():.2f}')
-            ax.axis('off')
-            idx += 1
-            
-            plt.draw()  # 刷新图窗
-            plt.pause(0.001)  # 给足够的时间显示图像
+        if show_result:  
+            plt.ion()  # 开启交互模式
+            for i in range(20):
+                rand_img = np.random.randint(0,len(inputs)-1)
+                ax = axes[idx//5, idx%5]
+                ax.imshow(inputs[rand_img].cpu().transpose(0,2)/255)
+                ax.set_title(f'O: {outputs[rand_img].item():.2f}, T: {targets[rand_img].item():.2f}')
+                ax.axis('off')
+                idx += 1
+                
+                plt.draw()  # 刷新图窗
+                plt.pause(0.001)  # 给足够的时间显示图像
     
-    plt.show()
+            plt.show()
+            plt.ioff()
 
     mse = total_loss / total_samples
     return mse
@@ -96,7 +66,7 @@ if __name__ == '__main__':
    
     begin_time = datetime.now().strftime('%y_%m_%d_%H_%M')
     
-    model_dir = f'./net_weights/{begin_time}_LR{LR}_BS{BATCH_SIZE}'
+    model_dir = f'./net_weights/{TYPE}_{begin_time}_LR{LR}_BS{BATCH_SIZE}'
 
     os.makedirs(model_dir)
     
@@ -106,20 +76,21 @@ if __name__ == '__main__':
     net = SimpleNet().to(device=device)
     optimizer = optim.SGD(net.parameters(), lr=LR, momentum=SGD_MOMENTUM)
 
-    eval_dataset = NuclearSegmentDataset('dataset\Lizard_Images','dataset\Lizard_Labels\Labels')
-    eval_dataloader = DataLoaderPrefetch(eval_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    eval_dataset = NuclearSegmentDataset('dataset\Lizard_Images','dataset\Lizard_Labels\Labels', num_true=128, num_false=128, device=device)
+    eval_dataloader = DataLoaderPrefetch(eval_dataset, batch_size=64, shuffle=True)
     eval_mse = eval(net,eval_dataloader)
+    datasets = PreFetchDataLoader('dataset\Lizard_Images','dataset\Lizard_Labels\Labels',
+                                        num_true=256,num_false=256,TYPE=TYPE, device=device)
 
     pbar = tqdm(total=EPOCH, desc="init", position=0, leave=False, ncols=80)
-    pbar.set_description(f'EP:({0}/{EPOCH})loss:x.xx,eval_MSE:{eval_mse:.2f}')
+    pbar.set_description(f'EPOCH> loss:x.xx,eval_MSE:{eval_mse:.2f} ')
     for epoch in range(EPOCH):
         # 加载数据集
         pbar.update(1)
-        train_dataset = NuclearSegmentDataset('dataset\Lizard_Images','dataset\Lizard_Labels\Labels')
+        train_dataset = datasets.fetch()
         train_dataloader = DataLoaderPrefetch(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
         criterion = nn.L1Loss()
-        
         for i, (images, ideal_val) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)
                                            , position=1, leave=False, ncols=80):
 
@@ -141,7 +112,7 @@ if __name__ == '__main__':
             
             torch.save(net.state_dict(), f'{model_dir}/EP{i}.pth')
 
-        pbar.set_description(f'EP:({epoch+1}/{EPOCH})loss:{loss:.2f},eval_MSE:{eval_acc:.2f}')
+        pbar.set_description(f'EPOCH> loss:{loss:.2f},eval_MSE:{eval_acc:.2f} ')
 
     torch.save(net.state_dict(), f'{model_dir}/final.pth')
-    torch.save(net.state_dict(), './net_weights/latest.pth')
+    torch.save(net.state_dict(), f'./net_weights/{TYPE}_latest.pth')

@@ -14,6 +14,8 @@ class SimpleNet(nn.Module):
             nn.Conv2d(in_channels=3,out_channels=32,kernel_size=2,stride=1,padding=1),
             nn.Sigmoid(),
             nn.Dropout(p=0.2),
+            nn.Conv2d(in_channels=32,out_channels=32,kernel_size=2,stride=1,padding=1),
+            nn.Sigmoid(),
             nn.AdaptiveAvgPool2d((2, 2))
         )
         self.linear = nn.Sequential(

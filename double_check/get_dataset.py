@@ -27,7 +27,7 @@ def get_proportion(box, binary_map):
 
 def get_subimages(
         label_file_path, image_file_path,
-        num_true=100, num_false=100, true_thresh=0.5, pos_rand=0.01, fake_rand=0.5,
+        num_true=100, num_false=100, true_thresh=0.5, pos_rand=0.2, fake_rand=1,
         output_dir='double_check_dataset'):
 
     subimage_list = []
@@ -41,21 +41,23 @@ def get_subimages(
     inst_map = label['inst_map']
     binary_map = inst_map != 0
     bboxs = label['bbox']
-    num_true = min(num_true, len(bboxs))
     Height, Width = inst_map.shape
     # visualize_bboxes(image_file_path,bboxs)
     """步骤1：获取正例"""
     index = np.linspace(0,len(bboxs)-1,len(bboxs), dtype=np.int32)
+    while(len(index)<num_true):
+        #print("longer")
+        index = np.append(index,index)
     np.random.shuffle(index)
     for i in range(num_true):
         bbox = bboxs[index[i]]
         box_width = bbox[3] - bbox[2]
         box_height = bbox[1] - bbox[0]
         noisy_bbox = [
-            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_height * 1.5),
-            bbox[1] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_height * 1.5),
-            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_width * 1.5),
-            bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width * 1.5), 
+            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_height ) - box_height * 0.1,
+            bbox[1] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_height) + box_height * 0.1,
+            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_width) - box_width * 0.1,
+            bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width) + box_width * 0.1, 
         ]
         subimage = image.crop((noisy_bbox[2],noisy_bbox[0],noisy_bbox[3],noisy_bbox[1]))
         subimage_list.append(subimage)
@@ -67,8 +69,8 @@ def get_subimages(
     mean_height = np.mean([bbox[1] - bbox[0] for bbox in bboxs])
     mean_width = np.mean([bbox[3] - bbox[2] for bbox in bboxs])
     while len(subimage_list) < num_false + num_true:
-        box_height = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_height * 1.5
-        box_width = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_width * 1.5
+        box_height = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_height
+        box_width = np.random.uniform(1 - fake_rand, 1 + fake_rand) * mean_width
         y0 = np.random.uniform(0, Height - box_height -1)
         x0 = np.random.uniform(0, Width - box_width -1)
         fake_bbox = [ y0, y0 + box_height, x0, x0 + box_width]

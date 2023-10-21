@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 import os
 
 path = "C:\\Users\\14152\\Desktop\\nuclear-segment\\dataset\\Lizard_Images"
-name = "consep_1"
+name = "consep_6"
 
 # 打开图像文件
 image = Image.open(os.path.join(path, f"{name}.png"))

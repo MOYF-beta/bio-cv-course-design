@@ -54,10 +54,10 @@ def get_subimages(
         box_width = bbox[3] - bbox[2]
         box_height = bbox[1] - bbox[0]
         noisy_bbox = [
-            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_height ) - box_height * 0.1,
-            bbox[1] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_height) + box_height * 0.1,
-            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_width) - box_width * 0.1,
-            bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width) + box_width * 0.1, 
+            bbox[0] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_height),
+            bbox[1] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_height),
+            bbox[2] + int(np.random.uniform(-pos_rand,pos_rand/2) * box_width),
+            bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width), 
         ]
         subimage = image.crop((noisy_bbox[2],noisy_bbox[0],noisy_bbox[3],noisy_bbox[1]))
         subimage_list.append(subimage)

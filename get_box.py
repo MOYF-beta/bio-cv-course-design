@@ -40,10 +40,10 @@ for box, score, label in zip(boxes, scores, labels):
     height = y2 - y1
 
     # double check
-    x1_d = x1 - width * 0.1
-    x2_d = x2 + width * 0.1
-    y1_d = y1 - height * 0.1
-    y2_d = y2 + height * 0.1
+    x1_d = x1 - width * 0.05
+    x2_d = x2 + width * 0.05
+    y1_d = y1 - height * 0.05
+    y2_d = y2 + height * 0.05
 
     subimage = image.crop((x1_d,y1_d,x2_d,y2_d))
     subimage = torch.tensor(np.array(subimage.resize((32, 32))),dtype=torch.float, device=device).transpose(0,2)

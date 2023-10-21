@@ -6,10 +6,12 @@ import numpy as np
 import torch
 from get_dataset import get_subimages
 from torch.utils.data import  Dataset
+#torch.multiprocessing.set_start_method('spawn')
+import torch.multiprocessing as mp
+
 
 class NuclearSegmentDataset(Dataset):
-
-    def __init__(self, image_path, label_path, num_true=32, num_false=32, TYPE=".", device = "cpu") -> None:
+    def __init__(self, image_path, label_path, num_true=32, num_false=32, TYPE=".", device="cpu"):
         self.label_path = label_path
         self.image_path = image_path
         self.img_list = [f for f in os.listdir(image_path) if f.endswith('.jpg') or f.endswith('.png') and (TYPE in f)]
@@ -38,6 +40,9 @@ class NuclearSegmentDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+    
+    def unload(self):
+        self.data = []
 
 
 

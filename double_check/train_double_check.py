@@ -5,6 +5,7 @@ import numpy as np
 
 from prefetch_dataloader import NuclearSegmentDataset, PreFetchDataLoader
 np.seterr(divide='ignore',invalid='ignore')
+np.seterr(over='ignore')
 import torch
 import torch.nn as nn
 from state_clasifier import SimpleNet
@@ -14,13 +15,14 @@ from prefetch_generator import BackgroundGenerator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 EPOCH = 25
-LR = 0.01
+LR = 0.005
 SGD_MOMENTUM = 0.9
 TYPE = '.'
 
 PRELOAD = 10
+WEIGHT = ""#'net_weights\._latest.pth'
 
 class DataLoaderPrefetch(DataLoader):
 
@@ -74,6 +76,9 @@ if __name__ == '__main__':
 
     # 初始化网络、优化器
     net = SimpleNet().to(device=device)
+    if(WEIGHT != ''):
+        weight = torch.load(WEIGHT)
+        net.load_state_dict(weight)
     optimizer = optim.SGD(net.parameters(), lr=LR, momentum=SGD_MOMENTUM)
 
     eval_dataset = NuclearSegmentDataset('dataset\Lizard_Images','dataset\Lizard_Labels\Labels', num_true=128, num_false=128, device=device)
@@ -111,6 +116,9 @@ if __name__ == '__main__':
         if epoch>0 and epoch % 25 == 0:
             
             torch.save(net.state_dict(), f'{model_dir}/EP{i}.pth')
+
+        train_dataset.data = None
+        train_dataloader = None
 
         pbar.set_description(f'EPOCH> loss:{loss:.2f},eval_MSE:{eval_acc:.2f} ')
 

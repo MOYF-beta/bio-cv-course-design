@@ -1,9 +1,5 @@
 import torch
 import torch.nn as nn
-
-# import numpy as np
-# from PIL import Image
-
 import torch.nn.init as init
 
 class SimpleNet(nn.Module):
@@ -13,8 +9,9 @@ class SimpleNet(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=3,out_channels=32,kernel_size=2,stride=1,padding=1),
             nn.Sigmoid(),
-            nn.Dropout(p=0.2),
-            nn.Conv2d(in_channels=32,out_channels=32,kernel_size=2,stride=1,padding=1),
+            nn.Conv2d(in_channels=32,out_channels=32,kernel_size=2,stride=2,padding=1),
+            nn.Sigmoid(),
+            nn.Conv2d(in_channels=32,out_channels=32,kernel_size=2,stride=2,padding=1),
             nn.Sigmoid(),
             nn.AdaptiveAvgPool2d((2, 2))
         )
@@ -47,24 +44,4 @@ class SimpleNet(nn.Module):
         x = self.conv(x)
         x = torch.flatten(x, 1)
         x = self.linear(x)
-        #x = self.softmax(x)
         return x
-
-# class Classifier:
-    
-#     def __init__(self, model_path):
-#         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#         self.model = SimpleNet()
-#         self.model.load_state_dict(torch.load(model_path))
-#         self.model = self.model.to(self.device)
-#         self.model.eval()
-        
-#     def __call__(self, image):
-        
-#         image = image.resize((128, 128))
-#         image = image.convert('RGB')
-#         image = image/255
-#         image = np.transpose(image,[2,0,1])
-#         image = torch.from_numpy(image).float().to(self.device)
-#         output = self.model(image.unsqueeze(0))
-#         return torch.argmax(output, dim=1).item()

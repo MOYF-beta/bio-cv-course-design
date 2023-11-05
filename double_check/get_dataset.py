@@ -3,6 +3,7 @@ import scipy.io as sio
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import random
 num_true = 100
 def visualize_bboxes(image_path, bbox_list):
     # Load image
@@ -27,7 +28,7 @@ def get_proportion(box, binary_map):
 
 def get_subimages(
         label_file_path, image_file_path,
-        num_true=100, num_false=100, true_thresh=0.5, pos_rand=0.2, fake_rand=1,
+        num_true=100, num_false=100, true_thresh=0.5, pos_rand=0.1, fake_rand=1,
         output_dir='double_check_dataset'):
 
     subimage_list = []
@@ -60,6 +61,21 @@ def get_subimages(
             bbox[3] + int(np.random.uniform(-pos_rand/2,pos_rand) * box_width), 
         ]
         subimage = image.crop((noisy_bbox[2],noisy_bbox[0],noisy_bbox[3],noisy_bbox[1]))
+        flip_horizontal = random.choice([True, False])
+        flip_vertical = random.choice([True, False])
+        rotate_90 = random.choice([0, 90, 180, 270])
+
+        # 执行水平翻转
+        if flip_horizontal:
+            subimage = subimage.transpose(Image.FLIP_LEFT_RIGHT)
+
+        # 执行竖直翻转
+        if flip_vertical:
+            subimage = subimage.transpose(Image.FLIP_TOP_BOTTOM)
+
+        # 执行90度旋转
+        subimage = subimage.rotate(rotate_90, expand=True)
+
         subimage_list.append(subimage)
         proportion = get_proportion(noisy_bbox, binary_map)
         proportion_list.append(proportion)

@@ -17,11 +17,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 16
 EPOCH = 25
-LR = 0.005
+LR = 0.001
 SGD_MOMENTUM = 0.9
 TYPE = '.'
 
-PRELOAD = 10
+PRELOAD =2
 WEIGHT = ""#'net_weights\._latest.pth'
 
 class DataLoaderPrefetch(DataLoader):

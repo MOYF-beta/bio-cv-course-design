@@ -4,3 +4,7 @@
 
 > 采用[Lizard dataset](https://www.kaggle.com/datasets/aadimator/lizard-dataset/)
 > Graham, Simon, et al. "Lizard: A Large-Scale Dataset for Colonic Nuclear Instance Segmentation and Classification." Proceedings of the IEEE/CVF International Conference on Computer Vision. 2021.
+
+需要首先安装pytorch、skimage等包
+
+运行getbox.py来获得结果
